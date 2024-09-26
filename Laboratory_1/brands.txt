@@ -1,0 +1,24 @@
+Смартфоны: Huawei; Samsung; Apple; Xiaomi; OnePlus; Realme; Oppo; Vivo; Google; Sony; 10000
+Умные часы: Xiaomi; Apple; Samsung; Garmin; Amazfit; Huawei; Fitbit; Withings; Fossil; Honor; 10000
+Наушники: Xiaomi; Apple; JBL; Beats; Bose; Sony; Sennheiser; Jabra; Skullcandy; Anker; 10000
+Телевизоры: Samsung; LG; Xiaomi; Sony; Panasonic; Philips; Hisense; TCL; Sharp; Vizio; 10000
+Ноутбуки: Apple; Huawei; Xiaomi; Lenovo; Samsung; HP; Asus; Acer; Dell; Microsoft; 10000
+Холодильники: Samsung; LG; Nordfrost; Бирюса; Atlant; Beko; Bosch; Gorenje; Haier; Indesit; 10000
+Микроволновые печи: Bosch; Gorenje; Maunfeld; Midea; Panasonic; Samsung; LG; Sharp; Daewoo; Electrolux; 10000
+Кофеварки и кофемашины: TEENRA; DeLonghi; Bosch; Philips; Nespresso; Krups; Jura; Gaggia; Miele; Saeco; 10000
+Вентиляторы: Centek; Equation; Scarlett; Ballu; Tefal; Vitek; Polaris; SUPRA; StarWind; Dyson; 10000
+Кондиционеры: Haier; Ballu; Hisense; ROYAL Clima; Electrolux; Mitsubishi; Daikin; Panasonic; LG; Toshiba; 10000
+Палатки: BTrace; High Peak; Tplus; Talberg; Alexika; Marmot; The North Face; MSR; Coleman; Salewa; 10000
+Велосипеды: STELS; Forward; Novatrack; Stark; Stinger; Merida; Scott; Trek; Specialized; Cannondale; 10000
+Гироскутеры: GT; Hoverbot; MiniPro; Zaxboard; Xiaomi; Ninebot; Smart Balance; Razor; Airwheel; InMotion; 10000
+Газонокосилки: Huter; PATRIOT; Ресанта; Зубр; Champion; Gardena; Bosch; Makita; Stiga; Honda; 10000
+Планшеты: Apple; Huawei; Xiaomi; Lenovo; Samsung; BQ; Microsoft; Acer; Asus; Dell; 10000
+Парфюмерия: SHAIK; Fragrance World; Giorgio Armani; Killian; Dior; Chanel; Gucci; Versace; Tom Ford; YSL; 10000
+Наручные часы: Casio; Traser; Jacques Lemans; Xiaomi; Apple; Seiko; Citizen; Omega; Breitling; Tissot; 10000
+Сумки: Samsonite; Tumi; Rimowa; Guess; Michael Kors; Chanel; Louis Vuitton; Prada; Fendi; Coach; 10000
+Чемоданы: Samsonite; American Tourister; Rimowa; Delsey; Antler; Victorinox; Travelpro; Briggs & Riley; IT Luggage; Eastpak; 10000
+Компьютерные кресла: DXRacer; ThunderX3; AeroCool; Cougar; Secretlab; AKRacing; Nitro Concepts; Noblechairs; Vertagear; Anda Seat; 10000
+Туристические рюкзаки: Osprey; Deuter; The North Face; Gregory; Lowe Alpine; Vaude; Salomon; Columbia; Black Diamond; Fjallraven; 10000
+Ролики: Rollerblade; K2; Powerslide; Fila; Seba; Roces; USD; Bauer; Bont; Reign; 10000
+Продукты: Молоко; Хлеб; Яйца; Мясо; Овощи; Фрукты; Крупы; Макароны; Консервы; 10000
+Косметика: Лосьоны; Кремы; Шампуни; Гели; Декоративная косметика; 10000
