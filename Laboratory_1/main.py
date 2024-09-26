@@ -29,11 +29,11 @@ def generate_card_number(bin_code, payment_system_code):
     return f"{payment_system_code}{bin_code}{remaining_digits}"
 
 # Загрузка списка магазинов и их координат из файла store_coordinates.txt
-stores = load_data_from_file('store_coordinates.txt')
+stores = load_data_from_file('Laboratory_1/store_coordinates.txt')
 
 # Загрузка брендов по категориям из файла brands.txt
 categories_and_brands = {}
-with open('brands.txt', 'r', encoding='utf-8') as file:
+with open('Laboratory_1/brands.txt', 'r', encoding='utf-8') as file:
     for line in file:
         line = line.strip()
         if ':' in line:
@@ -46,24 +46,44 @@ with open('brands.txt', 'r', encoding='utf-8') as file:
 
 # Определение категорий для каждого магазина
 store_categories = {
-    "М.Видео": ['Смартфоны', 'Ноутбуки', 'Телевизоры', 'Планшеты'],
-    "Эльдорадо": ['Смартфоны', 'Ноутбуки', 'Телевизоры', 'Планшеты', 'Умные часы'],
-    "Ашан": ['Парфюмерия', 'Холодильники', 'Микроволновые печи'],
-    "DNS": ['Смартфоны', 'Ноутбуки', 'Телевизоры', 'Планшеты', 'Кофеварки и кофемашины'],
-    "OZON": ['Смартфоны', 'Ноутбуки', 'Телевизоры', 'Кофеварки и кофемашины'],
-    "Wildberries": ['Смартфоны', 'Косметика', 'Кофеварки и кофемашины'],
-    "Лента": ['Продукты', 'Косметика'],
-    "Пятёрочка": ['Продукты', 'Косметика'],
-    "Metro": ['Продукты', 'Косметика'],
+    "М.Видео": ['Смартфоны', 'Ноутбуки', 'Телевизоры', 'Планшеты', 'Наушники', 'Микроволновые печи', 'Стиральные машины'],
+    "Эльдорадо": ['Смартфоны', 'Ноутбуки', 'Телевизоры', 'Планшеты', 'Умные часы', 'Наушники', 'Игровые приставки', 'Блендеры'],
+    "DNS": ['Смартфоны', 'Ноутбуки', 'Телевизоры', 'Планшеты', 'Кофеварки и кофемашины', 'Кондиционеры', 'Компьютерные кресла'],
+    "OZON": ['Смартфоны', 'Ноутбуки', 'Телевизоры', 'Кофеварки и кофемашины', 'Холодильники', 'Гироскутеры', 'Наручные часы'],
+    "Wildberries": ['Смартфоны', 'Косметика', 'Кофеварки и кофемашины', 'Холодильники', 'Микроволновые печи'],
+    "Лента": ['Продукты', 'Косметика', 'Вентиляторы', 'Гироскутеры', 'Кроссовки', 'Пылесосы', 'Принтеры'],
+    "Пятёрочка": ['Продукты', 'Косметика', 'Обогреватели'],
+    "Ашан": ['Парфюмерия', 'Холодильники', 'Продукты'],
+    "Metro": ['Продукты', 'Косметика', 'Гладильные доски', 'Стулья для офиса'],
+    "O'Кей": ['Продукты', 'Косметика', 'Сейфы'],
+    "Перекрёсток": ['Продукты', 'Косметика', 'Настольные лампы'],
+    "Дикси": ['Продукты', 'Косметика', 'Чайники'],
+    "Магнит": ['Продукты', 'Косметика', 'Чайники'],
+    "FixPrice": ['Продукты', 'Косметика', 'Фены'],
+    "Золотое Яблоко": ['Парфюмерия', 'Косметика', 'Ароматы', 'Сумки'],
+    "Азбука Вкуса": ['Продукты'],
+    "Hoff": ['Шкафы', 'Столы', 'Диваны', 'Шкафы для одежды', 'Кровати', 'Кухонные столы'],
+    "OBI": ['Газонокосилки', 'Садовый инвентарь', 'Инструменты', 'Стройматериалы', 'Шкафы для одежды', 'Комоды', 'Кровати', 'Игровые столы', 'Камеры видеонаблюдения'],
+    "Леруа Мерлен": ['Газонокосилки', 'Садовый инвентарь', 'Инструменты', 'Стройматериалы', 'Шкафы для одежды', 'Кровати', 'Шкафы-купе'],
+    "H&M": ['Одежда', 'Обувь', 'Кроссовки', 'Пуховики', 'Рубашки', 'Платья'],
+    "Zara": ['Одежда', 'Обувь', 'Кроссовки', 'Пуховики', 'Рубашки', 'Джинсы'],
+    "Спортмастер": ['Спортивная одежда', 'Спортивный инвентарь', 'Велосипеды', 'Ролики', 'Палатки', 'Туристические рюкзаки', 'Кроссовки', 'Носки', 'Куртки']
 }
 
 # Функция для генерации случайной даты и времени посещения магазина
 def generate_random_datetime():
-    start_time = datetime.strptime("2020-01-22T10:00+03:00", "%Y-%m-%dT%H:%M%z")
-    end_time = datetime.strptime("2020-01-22T22:00+03:00", "%Y-%m-%dT%H:%M%z")
+    start_time = datetime.strptime("2024-01-22T10:00+03:00", "%Y-%m-%dT%H:%M%z")
+    end_time = datetime.strptime("2024-01-22T22:00+03:00", "%Y-%m-%dT%H:%M%z")
     random_time = start_time + timedelta(minutes=random.randint(0, (end_time - start_time).seconds // 60))
-    return random_time.strftime("%Y-%m-%dT%H:%M:%S%z")
+    
+    # Форматирование времени с двоеточием в смещении
+    formatted_time = random_time.strftime("%Y-%m-%dT%H:%M:%S") + random_time.strftime("%z")[:3] + ":" + random_time.strftime("%z")[3:]
+    
+    return formatted_time
 
+
+
+# Функция для генерации строки данных для одного магазина
 # Функция для генерации строки данных для одного магазина
 def generate_store_data(store, categories_and_brands, bank_probabilities, payment_system_probabilities, card_count):
     store_name, lat, lon = store.split(',')
@@ -90,14 +110,14 @@ def generate_store_data(store, categories_and_brands, bank_probabilities, paymen
 
     # Определение средней цены для категории
     base_price = categories_and_brands.get(category, (None, 0))[1]
+    price = 0  # Инициализация переменной price
 
     if base_price > 0:
         # Генерация цены с учетом ±10% от средней
         price_variation = base_price * random.uniform(-0.1, 0.1)
         price = max(round(base_price + price_variation), 1)  # Генерация цены для одного товара
-        total_price = price * quantity  # Общая стоимость за количество товаров
-    else:
-        total_price = 0
+
+    total_price = price * quantity  # Общая стоимость за количество товаров
 
     # Генерация номера карты
     while True:
@@ -115,7 +135,7 @@ def generate_store_data(store, categories_and_brands, bank_probabilities, paymen
             card_count[card_number] = 1
             break
 
-    return [store_name.strip(), visit_time, coordinates, category, brand, card_number, quantity, price * quantity]
+    return [store_name.strip(), visit_time, coordinates, category, brand, card_number, quantity, total_price]
 
 # Функция для получения вероятностей
 def get_probabilities(probabilities_dict):
