@@ -92,7 +92,7 @@ def create_widgets(root):
     calculate_button = ttk.Button(button_frame, text="Рассчитать k-anonymity", command=lambda: calculate(tree, check_vars))
     calculate_button.pack(side='left', padx=5)
 
-    anonymize_button = ttk.Button(button_frame, text="Обезличить", command=lambda: anonymize())
+    anonymize_button = ttk.Button(button_frame, text="Обезличить", command=lambda: anonymize(check_vars))
     anonymize_button.pack(side='left', padx=5)
 
     exit_button = ttk.Button(button_frame, text="Выход", command=root.quit)
@@ -108,8 +108,6 @@ def select_file():
 def calculate(tree, check_vars):
     for item in tree.get_children():
         tree.delete(item)
-
-    selected_identifiers = [option for option, var in check_vars.items() if var.get()]
 
     try:
         if not file_path:
@@ -130,6 +128,9 @@ def calculate(tree, check_vars):
 
     total_records = len(data)
     results = []
+    unique_k1_rows = []
+
+    selected_identifiers = [option for option, var in check_vars.items() if var.get()]
 
     if selected_identifiers:
         selected_indices = [headers.index(identifier) for identifier in selected_identifiers if identifier in headers]
@@ -144,6 +145,9 @@ def calculate(tree, check_vars):
             k = counts[combination]
             if k < 10:
                 rows_to_delete.append(i + 2)  # Строки в Excel начинаются с 1, +2 из-за заголовка
+
+            if k == 1:
+                unique_k1_rows.append(combination)
 
         num_deleted_rows = len(rows_to_delete)
         percentage_deleted = (num_deleted_rows / total_records) * 100
@@ -166,16 +170,20 @@ def calculate(tree, check_vars):
     else:
         results.append("Нет квази-идентификатора")
 
+    if unique_k1_rows:
+        for row in unique_k1_rows:
+            results.append(f"Уникальная строка (k = 1): {row}")
+
     for result in results:
         tree.insert("", tk.END, values=(result,))
 
-def anonymize():
-    try:
-        workbook = load_workbook('shopping_dataset.xlsx')
-        sheet = workbook.active
-    except Exception as e:
-        print(f"Ошибка чтения файла: {e}")
+def anonymize(check_vars):
+    if not any(var.get() for var in check_vars.values()):
+        print("Ошибка: Не выбраны квази-идентификаторы для обезличивания.")
         return
+    
+    workbook = load_workbook('shopping_dataset.xlsx')
+    sheet = workbook.active
 
     anonymized_workbook = load_workbook('shopping_dataset.xlsx')
     anonymized_sheet = anonymized_workbook.active
@@ -190,99 +198,92 @@ def anonymize():
     quantity_index = headers.index("Количество товаров")
     cost_index = headers.index("Стоимость")
 
-    store_map = {}
-    category_map = {}
+    anonymization_actions = {
+        "Название магазина": lambda row: anonymize_store(row[store_index]),
+        "Дата и время": lambda row: anonymize_time(row[time_index]),
+        "Координаты": lambda row: anonymize_coordinates(row[coordinates_index]),
+        "Категория": lambda row: anonymize_category(row[category_index]),
+        "Бренд": lambda row: anonymize_brand(row[brand_index]),
+        "Номер карточки": lambda row: anonymize_card(row[card_number_index]),
+        "Количество товаров": lambda row: anonymize_quantity(row[quantity_index]),
+        "Стоимость": lambda row: anonymize_cost(row[cost_index]),
+    }
+
+    selected_identifiers = [identifier for identifier, var in check_vars.items() if var.get()]
 
     for row in anonymized_sheet.iter_rows(min_row=2, values_only=False):
-        store_cell = row[store_index]
-        store_name = store_cell.value
-        
-        #Анонимизация магазина
-        store_category = None
-        for category, stores in store_categories.items():
-            if store_name in stores:
-                store_category = category
-                break
-
-        if store_category:
-            if store_category not in store_map:
-                store_map[store_category] = f"{store_category}"
-            store_cell.value = store_map[store_category]
-
-        #Анонимизация времени
-        time_cell = row[time_index]
-        parsed_date = parser.isoparse(time_cell.value)
-        season = get_season(parsed_date)
-        time_cell.value = season
-
-        #Анонимизация координат
-        coordinates_cell = row[coordinates_index]
-        coordinates = coordinates_cell.value
-
-        for region, coords in region_mapping.items():
-            if coordinates in coords:
-                coordinates_cell.value = region
-                break
-
-        #Анонимизация категории
-        category_cell = row[category_index]
-        category_name = category_cell.value
-        
-        for general_category, subcategories in category_mapping.items():
-            if category_name in subcategories:
-                if general_category not in category_map:
-                    category_map[general_category] = f"{general_category}"
-                category_cell.value = category_map[general_category]
-                break
-        
-        #Анонимизация бренда
-        brand_cell = row[brand_index]
-        brand_cell.value = "**************"
-
-        #Анонимизация номера карточки
-        card_number_cell = row[card_number_index]
-        card_number = str(card_number_cell.value)
-        if len(card_number) >= 6:
-            bin_part = card_number[1:6]
-            bank_name = get_bank_by_bin(bin_part)
-            card_number_cell.value = bank_name
-
-        #Анонимизация количества товаров
-        quantity_cell = row[quantity_index]
-        quantity = quantity_cell.value
-
-        if quantity <= 7:
-            quantity_cell.value = "5 - 7"
-        else:
-            quantity_cell.value = "7 - 10"
-
-        #Анонимизация стоимости
-        cost_cell = row[cost_index]
-        cost = cost_cell.value
-
-        if cost <= 104999:
-            cost_cell.value = "1-104999"
-        else:
-            cost_cell.value = "105000 и более"
+        for identifier in selected_identifiers:
+            if identifier in anonymization_actions:
+                anonymization_actions[identifier](row)
 
     anonymized_workbook.save("anonymized_shopping_data.xlsx")
     print("Данные успешно обезличены и сохранены в anonymized_shopping_data.xlsx")
 
-def get_season(date):
-    month = date.month
-    if month in [12, 1, 2]:
-        return "Зима"
-    elif month in [3, 4, 5]:
-        return "Весна"
-    elif month in [6, 7, 8]:
-        return "Лето"
-    else:
-        return "Осень"
+def anonymize_store(store_cell):
+    store_name = store_cell.value
+    store_category = None
+    for category, stores in store_categories.items():
+        if store_name in stores:
+            store_category = category
+            break
 
-def get_bank_by_bin(bin_part):
-    for bank, bins in bin_codes.items():
-        if bin_part in bins:
-            return bank
+    if store_category:
+        store_cell.value = f"{store_category}"
+
+def anonymize_time(time_cell):
+    parsed_date = parser.isoparse(time_cell.value)
+    month = parsed_date.month
+    
+    if month in [12, 1, 2]:
+        season = "Зима"
+    elif month in [3, 4, 5]:
+        season = "Весна"
+    elif month in [6, 7, 8]:
+        season = "Лето"
+    else:
+        season = "Осень"
+
+    time_cell.value = season
+
+def anonymize_coordinates(coordinates_cell):
+    coordinates = coordinates_cell.value
+    for region, coords in region_mapping.items():
+        if coordinates in coords:
+            coordinates_cell.value = region
+            break
+
+def anonymize_category(category_cell):
+    category_name = category_cell.value
+    for general_category, subcategories in category_mapping.items():
+        if category_name in subcategories:
+            category_cell.value = f"{general_category}"
+            break
+
+def anonymize_brand(brand_cell):
+    brand_cell.value = "**************"
+
+def anonymize_card(card_number_cell):
+    card_number = str(card_number_cell.value)
+    if len(card_number) >= 6:
+        bin_part = card_number[1:6]
+        for bank, bins in bin_codes.items():
+            if bin_part in bins:
+                card_number_cell.value = bank
+                return
+
+def anonymize_quantity(quantity_cell):
+    quantity = quantity_cell.value
+    if quantity <= 7:
+        quantity_cell.value = "5 - 7"
+    else:
+        quantity_cell.value = "7 - 10"
+
+def anonymize_cost(cost_cell):
+    cost = cost_cell.value
+    if cost <= 104999:
+        cost_cell.value = "1-104999"
+    else:
+        cost_cell.value = "105000 и более"
 
 if __name__ == "__main__":
     root = setup_window()
