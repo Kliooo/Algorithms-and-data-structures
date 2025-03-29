@@ -188,7 +188,7 @@ def calculate_tsp():
 
     start_time = time.time()
 
-    best_path, best_distance, iteration_count = simulated_annealing(adj_matrix)
+    best_path, best_distance, iteration_count, time_simulated = simulated_annealing(adj_matrix)
 
     end_time = time.time()
 
@@ -196,12 +196,13 @@ def calculate_tsp():
 
     wrapped_best_path = textwrap.fill(f"Лучший путь: {' -> '.join(map(str, best_path))} -> {best_path[0]}", width=100)
 
-    if best_path and best_distance != "inf":
+    if best_path:
         results_text = (
             f"{wrapped_best_path}\n"
             f"Расстояние: {best_distance}\n"
             f"Количество итераций: {iteration_count}\n"
-            f"Время поиска: {elapsed_time:.8f} сек."
+            f"Общее время поиска: {elapsed_time:.8f} сек.\n"
+            f"Время отжига: {time_simulated:.8f} сек."
         )
         draw_shortest_path(best_path)
     else:
@@ -220,35 +221,57 @@ def simulated_annealing(adj_matrix):
         distance += adj_matrix[path[-1]].get(path[0], max_weight)
         return distance
     
-    def swap_two_cities(path):
-        new_path = path[:]
-        i, j = random.sample(range(len(path)), 2)
-        new_path[i], new_path[j] = new_path[j], new_path[i]
-        return new_path
-    
+    def depth_first_search(start, visited):
+        path = []
+        stack = [start]
+        while stack:
+            vertex = stack[-1]
+            if vertex not in visited:
+                visited.add(vertex)
+                path.append(vertex)
+            neighbors = [v for v in adj_matrix.get(vertex, {}) if v not in visited]
+            if neighbors:
+                stack.append(neighbors[0])
+            else:
+                stack.pop()
+        return path
+
     cities = list(adj_matrix.keys())
-    current_path = cities[:]
-    random.shuffle(current_path)
-    current_distance = total_distance(current_path)
     
+    best_path = None
+    best_distance = -1
+
+    for start_city in cities:
+        visited = set()
+        initial_path = depth_first_search(start_city, visited)
+        current_distance = total_distance(initial_path)
+        
+        if current_distance < 200000 and current_distance > best_distance:
+            best_path = initial_path
+            best_distance = current_distance
+
+    if best_path is None:
+        best_distance = "inf"
+
+    current_path = best_path
+    current_distance = best_distance
+
     T0 = 1000
     T = T0
     T_min = 1e-5
     alpha = 0.999
     
-    best_path = current_path[:]
-    best_distance = current_distance
-    
     num_vertices = len(cities)
-    
     iterations = num_vertices * 2000
-    
     iteration_count = 0
 
-    while T > T_min and iteration_count<iterations:
-        new_path = swap_two_cities(current_path)
-        new_distance = total_distance(new_path)
+    start_time = time.time()
+    while T > T_min and iteration_count < iterations:
+        i, j = random.sample(range(len(current_path)), 2)
+        new_path = current_path[:]
+        new_path[i], new_path[j] = new_path[j], new_path[i]
         
+        new_distance = total_distance(new_path)
         delta = new_distance - current_distance
         
         if delta < 0:
@@ -273,11 +296,14 @@ def simulated_annealing(adj_matrix):
             T *= alpha
 
         iteration_count += 1
-    
+
+    end_time = time.time()
+    time_simulated = end_time - start_time
+
     if best_distance > 100000:
         best_distance = "inf"
     
-    return best_path, best_distance, iteration_count
+    return best_path, best_distance, iteration_count, time_simulated
 
 def undo_last_action():
     global selected_vertex, selected_text_id, removed_vertices
