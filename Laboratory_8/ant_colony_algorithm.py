@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import ttk
+import numpy as np
 import math
 import time
 from tkinter.simpledialog import askinteger
@@ -172,7 +173,7 @@ def draw_directed_edge_on_canvas(start_vertex, end_vertex):
                                arrow=tk.LAST, fill="red", width=3, 
                                arrowshape=(10, 10, 5))
 
-def calculate_tsp():
+def calculate_tsp(alpha, beta, rho, Q, num_iterations):
     for widget in frame_results.winfo_children():
         widget.destroy()
 
@@ -186,23 +187,15 @@ def calculate_tsp():
     for edge in edges:
         adj_matrix[edge[0]][edge[1]] = edge[2]
 
-    start_time = time.time()
+    best_path, best_distance, elapsed_time = ant_colony_algorithm(adj_matrix, alpha, beta, rho, Q, num_iterations)
 
-    best_path, best_distance, iteration_count, time_simulated = simulated_annealing(adj_matrix)
-
-    end_time = time.time()
-
-    elapsed_time = end_time - start_time
-
-    wrapped_best_path = textwrap.fill(f"Лучший путь: {' -> '.join(map(str, best_path))} -> {best_path[0]}", width=100)
+    wrapped_best_path = textwrap.fill(f"Лучший путь: {' -> '.join(map(str, best_path))} -> {best_path[0]}", width=90)
 
     if best_path:
         results_text = (
             f"{wrapped_best_path}\n"
             f"Расстояние: {best_distance}\n"
-            f"Количество итераций: {iteration_count}\n"
-            f"Общее время поиска: {elapsed_time:.8f} сек.\n"
-            f"Время отжига: {time_simulated:.8f} сек."
+            f"Время поиска: {elapsed_time:.8f} сек.\n"
         )
         draw_shortest_path(best_path)
     else:
@@ -212,84 +205,84 @@ def calculate_tsp():
     results_label = tk.Label(frame_results, text=results_text)
     results_label.pack(padx=0, pady=0, fill="both", expand=True)
 
-def simulated_annealing(adj_matrix):
-    def total_distance(path):
-        distance = 0
-        for i in range(len(path) - 1):
-            distance += adj_matrix[path[i]].get(path[i + 1], 100000)
-        distance += adj_matrix[path[-1]].get(path[0], 100000)
-        return distance
+def ant_colony_algorithm(adj_matrix, alpha, beta, rho, Q, num_iterations):
+    vertex_ids = list(adj_matrix.keys())
+    pheromones = {i: {j: 1 for j in vertex_ids if j in adj_matrix[i]} for i in vertex_ids}
+    best_path = None
+    best_distance = float("inf")
 
-    def greedy_starting_path():
-        cities = list(adj_matrix.keys())
-        start_city = cities[0]
-        path = [start_city]
-        visited = {start_city}
+    num_ants = len(adj_matrix)
+    start_time = time.perf_counter()
 
-        while len(path) < len(cities):
-            last_city = path[-1]
-            next_city = min(
-                (city for city in adj_matrix[last_city] if city not in visited),
-                key=lambda city: adj_matrix[last_city].get(city, float('inf'))
-            )
-            path.append(next_city)
-            visited.add(next_city)
+    for iteration in range(num_iterations):
+        all_paths = []
+        all_distances = []
 
-        return path
-
-    cities = list(adj_matrix.keys())
-
-    best_path = greedy_starting_path()
-    best_distance = total_distance(best_path)
-
-    current_path = best_path
-    current_distance = best_distance
-
-    T0 = 1000
-    T = T0
-    T_min = 1e-5
-    alpha = 0.999
-
-    num_vertices = len(cities)
-    iterations = num_vertices * 2000
-    iteration_count = 0
-
-    start_time = time.time()
-    while T > T_min and iteration_count < iterations:
-        i, j = random.sample(range(len(current_path)), 2)
-        new_path = current_path[:]
-        new_path[i], new_path[j] = new_path[j], new_path[i]
-        
-        new_distance = total_distance(new_path)
-        delta = new_distance - current_distance
-        
-        if delta < 0:
-            probability = 1
-        else:
-            if mode == "ON":
-                probability = 1 / (1 + delta / T)
-            else:
-                probability = math.exp(-delta / T)
-        
-        if random.random() < probability:
-            current_path = new_path
-            current_distance = new_distance
-            
-            if current_distance < best_distance:
-                best_path = current_path[:]
-                best_distance = current_distance
-        
         if mode == "ON":
-            T = T0 / (1 + iteration_count)
+            starts = [random.choice(vertex_ids) for _ in range(num_ants)]
         else:
-            T *= alpha
+            starts = [vertex_ids[ant % len(vertex_ids)] for ant in range(num_ants)]
 
-        iteration_count += 1
+        for ant in range(num_ants):
+            start = starts[ant]
+            unvisited = set(vertex_ids)
+            unvisited.remove(start)
+            path = [start]
+            current = start
+            total_distance = 0
+            failed = False
 
-    end_time = time.time()
-    time_simulated = end_time - start_time
-    
-    return best_path, best_distance, iteration_count, time_simulated
+            while unvisited:
+                probabilities = []
+                total = 0
+                for next_vertex in unvisited:
+                    if next_vertex in adj_matrix[current]:
+                        pheromone = pheromones[current][next_vertex] ** alpha
+                        distance = adj_matrix[current][next_vertex]
+                        visibility = (1 / distance) ** beta
+                        p = pheromone * visibility
+                        probabilities.append((next_vertex, p))
+                        total += p
+
+                if total == 0:
+                    failed = True
+                    break
+
+                r = random.uniform(0, total)
+                cumulative = 0
+                for vertex, prob in probabilities:
+                    cumulative += prob
+                    if r <= cumulative:
+                        next_vertex = vertex
+                        break
+
+                path.append(next_vertex)
+                total_distance += adj_matrix[current][next_vertex]
+                unvisited.remove(next_vertex)
+                current = next_vertex
+
+            if not failed and path[0] in adj_matrix[current]:
+                total_distance += adj_matrix[current][path[0]]
+                path.append(path[0])
+                all_paths.append(path)
+                all_distances.append(total_distance)
+
+                if total_distance < best_distance:
+                    best_distance = total_distance
+                    best_path = path[:-1]
+
+        for i in pheromones:
+            for j in pheromones[i]:
+                pheromones[i][j] *= (1 - rho)
+
+        for path, dist in zip(all_paths, all_distances):
+            for i in range(len(path) - 1):
+                a, b = path[i], path[i+1]
+                pheromones[a][b] += Q / dist
+
+    elapsed_time = time.perf_counter() - start_time
+
+    return best_path, best_distance, elapsed_time
 
 def undo_last_action():
     global selected_vertex, selected_text_id, removed_vertices
@@ -437,7 +430,7 @@ def centerWindow(window):
 if __name__ == "__main__":
     root = tk.Tk()
     root.title("Задача коммивояжера")
-    root.geometry("900x600")
+    root.geometry("900x650")
 
     main_frame = tk.Frame(root)
     main_frame.pack(fill="both", expand=True)
@@ -452,7 +445,7 @@ if __name__ == "__main__":
     left_frame.grid_rowconfigure(0, weight=1)
     left_frame.grid_rowconfigure(1, weight=1)
     left_frame.grid_columnconfigure(0, weight=1)
-
+    
     frame_input = tk.LabelFrame(left_frame, text="Входной граф", padx=0, pady=0)
     frame_input.grid(row=0, column=0, sticky="nsew")
 
@@ -469,7 +462,8 @@ if __name__ == "__main__":
     frame_edges = tk.LabelFrame(right_frame, text="Рёбра", padx=0, pady=0)
     frame_edges.grid(row=0, column=0, sticky="nsew")
 
-    tree = ttk.Treeview(frame_edges, columns=("Vertex 1", "Vertex 2", "Weight"), show="headings")
+    tree = ttk.Treeview(frame_edges, columns=("Vertex 1", "Vertex 2", "Weight"), show="headings", height=4)
+    tree.pack(fill="both")
     tree.heading("Vertex 1", text="Вершина 1")
     tree.heading("Vertex 2", text="Вершина 2")
     tree.heading("Weight", text="Вес")
@@ -480,24 +474,52 @@ if __name__ == "__main__":
     tree.column("Vertex 2", width=50, stretch=True)
     tree.column("Weight", width=50, stretch=True)
 
-    frame_buttons = tk.LabelFrame(right_frame, padx=0, pady=0)
-    frame_buttons.grid(row=1, column=0, sticky="nsew")
+    frame_params = tk.LabelFrame(right_frame, padx=0, pady=0)
+    frame_params.grid(row=1, column=0, sticky="nsew")
 
-    button_1 = tk.Button(frame_buttons, text="Рассчитать", height=2, command=calculate_tsp)
+    params = {
+        "alpha": 1,
+        "beta": 2,
+        "rho": 0.5,
+        "Q": 100,
+        "num_iterations": 40
+    }
+
+    entries = {}
+    for i, (key, value) in enumerate(params.items()):
+        label = tk.Label(frame_params, text=key)
+        label.grid(row=i, column=0, sticky="w", padx=5, pady=2)
+        entry = tk.Entry(frame_params)
+        entry.insert(0, str(value))
+        entry.grid(row=i, column=1, sticky="ew", padx=5, pady=2)
+        entries[key] = entry
+
+    frame_params.columnconfigure(1, weight=1)
+
+    frame_buttons = tk.LabelFrame(right_frame, padx=0, pady=0)
+    frame_buttons.grid(row=2, column=0, sticky="nsew")
+
+    button_1 = tk.Button(frame_buttons, text="Рассчитать", height=1, command=lambda: calculate_tsp(
+        float(entries["alpha"].get()),
+        float(entries["beta"].get()),
+        float(entries["rho"].get()),
+        float(entries["Q"].get()),
+        int(entries["num_iterations"].get())
+    ))
     button_1.pack(fill="both", expand=True)
-    mode_button = tk.Button(frame_buttons, text="Модификация: Вкл.", height=2, command=toggle_mode)
+    mode_button = tk.Button(frame_buttons, text="Модификация: Вкл.", height=1, command=toggle_mode)
     mode_button.pack(fill="both", expand=True)
-    btn_save = tk.Button(frame_buttons, text="Сохранить граф", height=2, command=save_graph_to_xlsx)
+    btn_save = tk.Button(frame_buttons, text="Сохранить граф", height=1, command=save_graph_to_xlsx)
     btn_save.pack(fill="both", expand=True)
-    btn_load = tk.Button(frame_buttons, text="Загрузить граф", height=2, command=load_graph_from_xlsx)
+    btn_load = tk.Button(frame_buttons, text="Загрузить граф", height=1, command=load_graph_from_xlsx)
     btn_load.pack(fill="both", expand=True)
-    button_2 = tk.Button(frame_buttons, text="Отменить", height=2, command=undo_last_action)
+    button_2 = tk.Button(frame_buttons, text="Отменить", height=1, command=undo_last_action)
     button_2.pack(fill="both", expand=True)
-    button_3 = tk.Button(frame_buttons, text="Очистить", height=2, command=clear_all)
+    button_3 = tk.Button(frame_buttons, text="Очистить", height=1, command=clear_all)
     button_3.pack(fill="both", expand=True)
 
     frame_results = tk.LabelFrame(right_frame, text="Результаты", padx=0, pady=0)
-    frame_results.grid(row=2, column=0, sticky="ewns")
+    frame_results.grid(row=3, column=0, sticky="ewns")
 
     results_label = tk.Label(frame_results, text="Пусто")
     results_label.pack(padx=0, pady=0, fill="both", expand=True)
